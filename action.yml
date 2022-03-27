@@ -69,6 +69,7 @@ runs:
       run: |
         sudo curl -Lo /usr/local/bin/ecs-cli https://amazon-ecs-cli.s3.amazonaws.com/ecs-cli-linux-amd64-v1.21.0
         sudo chmod +x /usr/local/bin/ecs-cli
+
     - name: Retrieve container logs from CloudWatch logs
       shell: bash
       id: logs
@@ -76,4 +77,4 @@ runs:
         ecs-cli logs --timestamps \
           --cluster ${{ inputs.family }} \
           --task-id $(echo ${{ steps.run-task.outputs.task_arn }} | cut -d "/" -f 3) \
-          --task-def ${{ inputs.task-definition-family }}:${{ steps.task-def-registration.outputs.revision }}
+          --task-def ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }}
