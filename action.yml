@@ -30,6 +30,9 @@ inputs:
     default: "DISABLED"
 
 outputs:
+  task-id:
+    description: "Task ID"
+    value: ${{ steps.run-task.outputs.task_id }}
   revision:
     description: "Task definition's revision number"
     value: ${{ steps.task-def-register.outputs.revision }}
@@ -37,9 +40,13 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Install AWS CLI form pip
+    - name: Install AWS CLI
       shell: bash
-      run: pip install --upgrade pip awscli
+      run: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install
+        awscli --version
 
     - name: Register ECS task definition
       shell: bash
@@ -56,6 +63,7 @@ runs:
       run: |
         task_arn=$(aws ecs run-task --region ${{ inputs.region }} --launch-type ${{ inputs.launch-type }} --cluster ${{ inputs.cluster }} --network-configuration 'awsvpcConfiguration=${{ env.vpc_configuration }}' --task-definition ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }} --query tasks[0].taskArn --output text)
         echo "::set-output name=task_arn::$task_arn"
+        echo "::set-output name=task_id::${task_arn/*\//}"
 
     - name: Wait until a task stopped
       shell: bash
@@ -75,6 +83,6 @@ runs:
       id: logs
       run: |
         ecs-cli logs --timestamps \
-          --cluster ${{ inputs.family }} \
-          --task-id $(echo ${{ steps.run-task.outputs.task_arn }} | cut -d "/" -f 3) \
+          --cluster ${{ inputs.cluster }} \
+          --task-id ${{ steps.run-task.outputs.task_id }} \
           --task-def ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }}
