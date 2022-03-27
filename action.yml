@@ -6,16 +6,10 @@ inputs:
     required: false
     default: "ap-northeast-1"
   task-definition:
-    description: "Path to a task-definition file"
     required: true
+    description: "The path to the task definition file"
   task-definition-family:
     description: "a name for your task definition"
-    required: true
-  container-name:
-    description: "ECS container name"
-    required: true
-  container-image:
-    description: "Docker image name"
     required: true
   launch-type:
     description: "Launch type"
@@ -43,15 +37,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Fill in the new image ID in the Amazon ECS task definition
-      shell: bash
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      id: task-def-render
-      with:
-        task-definition: ${{ inputs.task-definition }}
-        container-name: ${{ inputs.container-name }}
-        image: ${{ inputs.container-image }}
-
     - name: Install AWS CLI form pip
       shell: bash
       run: pip install --upgrade pip awscli
@@ -60,7 +45,7 @@ runs:
       shell: bash
       id: task-def-register
       run: |
-        revision=$(aws ecs register-task-definition --region ${{ inputs.region }} --family ${{ inputs.task-definition-family }} --cli-input-json file://${{ steps.task-def-render.outputs.task-definition }} --query taskDefinition.revision)
+        revision=$(aws ecs register-task-definition --region ${{ inputs.region }} --family ${{ inputs.task-definition-family }} --cli-input-json file://${{ inputs.task-definition }} --query taskDefinition.revision)
         echo "::set-output name=revision::$revision"
 
     - name: Run ECS task
