@@ -1,5 +1,10 @@
 name: "Run ECS task"
 description: "GitHub Action to run a task on Amazon ECS and output CloudWatch Logs"
+author: yyoshiki41
+branding:
+  icon: "cloud"
+  color: "orange"
+
 inputs:
   region:
     description: "AWS Region"
