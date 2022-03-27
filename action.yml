@@ -43,10 +43,12 @@ runs:
     - name: Install AWS CLI
       shell: bash
       run: |
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        sudo ./aws/install --update
-        awscli --version
+        if ! [ -x "$(command -v aws)" ]; then
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install --update
+          awscli --version
+        fi
 
     - name: Register ECS task definition
       shell: bash
