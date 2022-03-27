@@ -14,7 +14,7 @@ inputs:
     required: true
     description: "The path to the task definition file"
   task-definition-family:
-    description: "a name for your task definition"
+    description: "The name for your task definition"
     required: true
   launch-type:
     description: "Launch type"
@@ -33,6 +33,12 @@ inputs:
     description: "awsvpcConfiguration values"
     required: false
     default: "DISABLED"
+  container-name:
+    description: "The name of the container that run command. This parameter is required if any override is specified."
+    required: false
+  command:
+    description: "Overrides the default command from the Docker image or the task definition. This parameter is required if any override is specified."
+    required: false
 
 outputs:
   task-id:
@@ -67,8 +73,13 @@ runs:
       id: run-task
       env:
         vpc_configuration: "{subnets=${{ inputs.subnets }},securityGroups=${{ inputs.security-groups }},assignPublicIp=${{ inputs.assign-public-ip }}}"
+        container_overrides: '{"containerOverrides": [{"name": ${{ inputs.container_name}}, "command": ${{ inputs.command }}}]}'
       run: |
-        task_arn=$(aws ecs run-task --region ${{ inputs.region }} --launch-type ${{ inputs.launch-type }} --cluster ${{ inputs.cluster }} --network-configuration 'awsvpcConfiguration=${{ env.vpc_configuration }}' --task-definition ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }} --query tasks[0].taskArn --output text)
+        if [ ${{ inputs.container_name }} != '' ] && [ ${{ inputs.command }} != '' ]; then
+          task_arn=$(aws ecs run-task --region ${{ inputs.region }} --launch-type ${{ inputs.launch-type }} --cluster ${{ inputs.cluster }} --network-configuration 'awsvpcConfiguration=${{ env.vpc_configuration }}' --task-definition ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }} --overrides ${{ env.container_overrides }} --query tasks[0].taskArn --output text)
+        else
+          task_arn=$(aws ecs run-task --region ${{ inputs.region }} --launch-type ${{ inputs.launch-type }} --cluster ${{ inputs.cluster }} --network-configuration 'awsvpcConfiguration=${{ env.vpc_configuration }}' --task-definition ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }} --query tasks[0].taskArn --output text)
+        fi
         echo "::set-output name=task_arn::$task_arn"
         echo "::set-output name=task_id::${task_arn/*\//}"
 
