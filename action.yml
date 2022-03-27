@@ -3,8 +3,8 @@ description: "GitHub Action to run a task on Amazon ECS and output CloudWatch Lo
 inputs:
   region:
     description: "AWS Region"
-    required: true
-    default: ap-northeast-1
+    required: false
+    default: "ap-northeast-1"
   task-definition:
     description: "Path to a task-definition file"
     required: true
@@ -19,8 +19,8 @@ inputs:
     required: true
   launch-type:
     description: "Launch type"
-    default: "FARGATE"
     required: false
+    default: "FARGATE"
   cluster:
     description: "ECS Cluster name"
     required: true
@@ -32,12 +32,14 @@ inputs:
     required: true
   assign-public-ip:
     description: "awsvpcConfiguration values"
-    default: "DISABLED"
     required: false
+    default: "DISABLED"
+
 outputs:
   revision:
     description: "Task definition's revision number"
     value: ${{ steps.task-def-register.outputs.revision }}
+
 runs:
   using: "composite"
   steps:
