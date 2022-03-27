@@ -47,6 +47,9 @@ outputs:
   revision:
     description: "Task definition's revision number"
     value: ${{ steps.task-def-register.outputs.revision }}
+  logs:
+    description: "CloudWatch Logs"
+    value: ${{ steps.logs.outputs.stdout }}
 
 runs:
   using: "composite"
@@ -73,10 +76,10 @@ runs:
       id: run-task
       env:
         vpc_configuration: "{subnets=${{ inputs.subnets }},securityGroups=${{ inputs.security-groups }},assignPublicIp=${{ inputs.assign-public-ip }}}"
-        container_overrides: '{"containerOverrides": [{"name": ${{ inputs.container_name}}, "command": ${{ inputs.command }}}]}'
+        container_overrides: '{"containerOverrides": [{"name": "${{ inputs.container-name}}", "command": ${{ inputs.command }} }]}'
       run: |
-        if [ ${{ inputs.container_name }} != '' ] && [ ${{ inputs.command }} != '' ]; then
-          task_arn=$(aws ecs run-task --region ${{ inputs.region }} --launch-type ${{ inputs.launch-type }} --cluster ${{ inputs.cluster }} --network-configuration 'awsvpcConfiguration=${{ env.vpc_configuration }}' --task-definition ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }} --overrides ${{ env.container_overrides }} --query tasks[0].taskArn --output text)
+        if [ '${{ inputs.container-name }}' != '' ] && [ '${{ inputs.command }}' != '' ]; then
+          task_arn=$(aws ecs run-task --region ${{ inputs.region }} --launch-type ${{ inputs.launch-type }} --cluster ${{ inputs.cluster }} --network-configuration 'awsvpcConfiguration=${{ env.vpc_configuration }}' --task-definition ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }} --overrides '${{ env.container_overrides }}' --query tasks[0].taskArn --output text)
         else
           task_arn=$(aws ecs run-task --region ${{ inputs.region }} --launch-type ${{ inputs.launch-type }} --cluster ${{ inputs.cluster }} --network-configuration 'awsvpcConfiguration=${{ env.vpc_configuration }}' --task-definition ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }} --query tasks[0].taskArn --output text)
         fi
@@ -92,8 +95,10 @@ runs:
 
     - name: Install ecs-cli
       shell: bash
+      env:
+        ecs_cli_version: v1.21.0
       run: |
-        sudo curl -Lo /usr/local/bin/ecs-cli https://amazon-ecs-cli.s3.amazonaws.com/ecs-cli-linux-amd64-v1.21.0
+        sudo curl -Lo /usr/local/bin/ecs-cli https://amazon-ecs-cli.s3.amazonaws.com/ecs-cli-linux-amd64-${{ env.ecs_cli_version }}
         sudo chmod +x /usr/local/bin/ecs-cli
 
     - name: Retrieve container logs from CloudWatch logs
@@ -104,3 +109,12 @@ runs:
           --cluster ${{ inputs.cluster }} \
           --task-id ${{ steps.run-task.outputs.task_id }} \
           --task-def ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }}
+
+    - name: Save logs
+      shell: bash
+      run: |
+        out=${{ steps.logs.outputs.stdout }}
+        out="${out//'%'/'%25'}"
+        out="${out//$'\n'/'%0A'}"
+        out="${out//$'\r'/'%0D'}"
+        echo "::set-output name=logs::$out"
