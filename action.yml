@@ -49,7 +49,7 @@ outputs:
     value: ${{ steps.task-def-register.outputs.revision }}
   logs:
     description: "CloudWatch Logs"
-    value: ${{ steps.logs.outputs.stdout }}
+    value: ${{ steps.logs.outputs.out }}
 
 runs:
   using: "composite"
@@ -105,16 +105,12 @@ runs:
       shell: bash
       id: logs
       run: |
-        ecs-cli logs --timestamps \
+        out=$(ecs-cli logs --timestamps \
           --cluster ${{ inputs.cluster }} \
           --task-id ${{ steps.run-task.outputs.task_id }} \
-          --task-def ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }}
-
-    - name: Save logs
-      shell: bash
-      run: |
-        out=${{ steps.logs.outputs.stdout }}
+          --task-def ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }})
+        echo $out
         out="${out//'%'/'%25'}"
         out="${out//$'\n'/'%0A'}"
         out="${out//$'\r'/'%0D'}"
-        echo "::set-output name=logs::$out"
+        echo "::set-output name=out::$out"
