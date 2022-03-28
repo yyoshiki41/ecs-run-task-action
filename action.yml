@@ -68,7 +68,11 @@ runs:
       shell: bash
       id: task-def-register
       run: |
-        revision=$(aws ecs register-task-definition --region ${{ inputs.region }} --family ${{ inputs.task-definition-family }} --cli-input-json file://${{ inputs.task-definition }} --query taskDefinition.revision)
+        revision=$(aws ecs register-task-definition \
+          --region ${{ inputs.region }} \
+          --family ${{ inputs.task-definition-family }} \
+          --cli-input-json file://${{ inputs.task-definition }} \
+          --query taskDefinition.revision)
         echo "::set-output name=revision::$revision"
 
     - name: Run ECS task
@@ -79,9 +83,22 @@ runs:
         container_overrides: '{"containerOverrides": [{"name": "${{ inputs.container-name}}", "command": ${{ inputs.command }} }]}'
       run: |
         if [ '${{ inputs.container-name }}' != '' ] && [ '${{ inputs.command }}' != '' ]; then
-          task_arn=$(aws ecs run-task --region ${{ inputs.region }} --launch-type ${{ inputs.launch-type }} --cluster ${{ inputs.cluster }} --network-configuration 'awsvpcConfiguration=${{ env.vpc_configuration }}' --task-definition ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }} --overrides '${{ env.container_overrides }}' --query tasks[0].taskArn --output text)
+          task_arn=$(aws ecs run-task \
+            --region ${{ inputs.region }} \
+            --launch-type ${{ inputs.launch-type }} \
+            --cluster ${{ inputs.cluster }} \
+            --network-configuration 'awsvpcConfiguration=${{ env.vpc_configuration }}' \
+            --task-definition ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }} \
+            --overrides '${{ env.container_overrides }}' \
+            --query tasks[0].taskArn --output text)
         else
-          task_arn=$(aws ecs run-task --region ${{ inputs.region }} --launch-type ${{ inputs.launch-type }} --cluster ${{ inputs.cluster }} --network-configuration 'awsvpcConfiguration=${{ env.vpc_configuration }}' --task-definition ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }} --query tasks[0].taskArn --output text)
+          task_arn=$(aws ecs run-task \
+            --region ${{ inputs.region }} \
+            --launch-type ${{ inputs.launch-type }} \
+            --cluster ${{ inputs.cluster }} \
+            --network-configuration 'awsvpcConfiguration=${{ env.vpc_configuration }}' \
+            --task-definition ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }} \
+            --query tasks[0].taskArn --output text)
         fi
         echo "::set-output name=task_arn::$task_arn"
         echo "::set-output name=task_id::${task_arn/*\//}"
@@ -109,7 +126,6 @@ runs:
           --cluster ${{ inputs.cluster }} \
           --task-id ${{ steps.run-task.outputs.task_id }} \
           --task-def ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }})
-        echo $out
         out="${out//'%'/'%25'}"
         out="${out//$'\n'/'%0A'}"
         out="${out//$'\r'/'%0D'}"
