@@ -106,7 +106,7 @@ runs:
     - name: Wait until a task stopped
       shell: bash
       run: |
-        ::echo::on
+        echo '::echo::on'
         aws ecs wait tasks-stopped \
           --cluster ${{ inputs.cluster }} \
           --tasks ${{ steps.run-task.outputs.task_arn }}
