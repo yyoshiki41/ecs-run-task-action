@@ -57,12 +57,14 @@ runs:
     - name: Install AWS CLI
       shell: bash
       run: |
+        echo "::group::Install AWS CLI"
         if ! [ -x "$(command -v aws)" ]; then
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install --update
           awscli --version
         fi
+        echo "::endgroup::"
 
     - name: Register ECS task definition
       shell: bash
@@ -82,6 +84,7 @@ runs:
         vpc_configuration: "{subnets=${{ inputs.subnets }},securityGroups=${{ inputs.security-groups }},assignPublicIp=${{ inputs.assign-public-ip }}}"
         container_overrides: '{"containerOverrides": [{"name": "${{ inputs.container-name}}", "command": ${{ inputs.command }} }]}'
       run: |
+        echo "::group::Run ECS Task"
         if [ '${{ inputs.container-name }}' != '' ] && [ '${{ inputs.command }}' != '' ]; then
           task_arn=$(aws ecs run-task \
             --region ${{ inputs.region }} \
@@ -102,11 +105,11 @@ runs:
         fi
         echo "::set-output name=task_arn::$task_arn"
         echo "::set-output name=task_id::${task_arn/*\//}"
+        echo "::endgroup::"
 
     - name: Wait until a task stopped
       shell: bash
       run: |
-        echo '::echo::on'
         aws ecs wait tasks-stopped \
           --cluster ${{ inputs.cluster }} \
           --tasks ${{ steps.run-task.outputs.task_arn }}
@@ -123,6 +126,8 @@ runs:
       shell: bash
       id: logs
       run: |
+        echo "::group::Retrieve container logs from CloudWatch logs"
+        echo '::echo::on'
         out=$(ecs-cli logs --timestamps \
           --cluster ${{ inputs.cluster }} \
           --task-id ${{ steps.run-task.outputs.task_id }} \
@@ -131,3 +136,4 @@ runs:
         out="${out//$'\n'/'%0A'}"
         out="${out//$'\r'/'%0D'}"
         echo "::set-output name=out::$out"
+        echo "::endgroup::"
