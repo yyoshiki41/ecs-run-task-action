@@ -131,5 +131,6 @@ runs:
         out="${out//'%'/'%25'}"
         out="${out//$'\n'/'%0A'}"
         out="${out//$'\r'/'%0D'}"
+        out="${out//$'^'/'d'}"
         echo "::set-output name=out::$out"
         echo "::endgroup::"
