@@ -134,3 +134,18 @@ runs:
         out="${out//$'^'/'d'}"
         echo "::set-output name=out::$out"
         echo "::endgroup::"
+
+    - name: Check exit code in tasks
+      shell: bash
+      id: task-exit-code
+      run: |
+        exitCode=$(aws ecs describe-tasks \
+          --region ${{ inputs.region }} \
+          --cluster ${{ inputs.cluster }} \
+          --tasks ${{ steps.run-task.outputs.task_arn }} \
+          --query tasks[0].containers[0].exitCode \
+          --output text)
+        if [ '${{ exitCode }}' != '0' ]; then
+          echo "detected run-task failure"
+          exit ${{ exitCode }}
+        fi
