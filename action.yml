@@ -145,7 +145,7 @@ runs:
           --tasks ${{ steps.run-task.outputs.task_arn }} \
           --query tasks[0].containers[0].exitCode \
           --output text)
-        if [ '${{ exitCode }}' != '0' ]; then
+        if [ "$exitCode" != "0" ]; then
           echo "detected run-task failure"
-          exit ${{ exitCode }}
+          exit $exitCode
         fi
