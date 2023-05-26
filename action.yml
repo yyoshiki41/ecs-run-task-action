@@ -73,7 +73,7 @@ runs:
           --family ${{ inputs.task-definition-family }} \
           --cli-input-json file://${{ inputs.task-definition }} \
           --query taskDefinition.revision)
-        echo "::set-output name=revision::$revision"
+        echo "revision=$revision" >> $GITHUB_OUTPUT
 
     - name: Run ECS task
       shell: bash
@@ -100,8 +100,8 @@ runs:
             --task-definition ${{ inputs.task-definition-family }}:${{ steps.task-def-register.outputs.revision }} \
             --query tasks[0].taskArn --output text)
         fi
-        echo "::set-output name=task_arn::$task_arn"
-        echo "::set-output name=task_id::${task_arn/*\//}"
+        echo "task_arn=$task_arn" >> $GITHUB_OUTPUT
+        echo "task_id=${task_arn/*\//}" >> $GITHUB_OUTPUT
 
     - name: Wait until a task stopped
       shell: bash
@@ -132,7 +132,7 @@ runs:
         out="${out//$'\n'/'%0A'}"
         out="${out//$'\r'/'%0D'}"
         out="${out//$'^'/'d'}"
-        echo "::set-output name=out::$out"
+        echo "out=$out" >> $GITHUB_OUTPUT
         echo "::endgroup::"
 
     - name: Check exit code in tasks
