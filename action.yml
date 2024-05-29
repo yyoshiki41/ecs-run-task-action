@@ -105,10 +105,28 @@ runs:
 
     - name: Wait until a task stopped
       shell: bash
+      env:
+        max_attempt_count: 3
       run: |
-        aws ecs wait tasks-stopped \
-          --cluster ${{ inputs.cluster }} \
-          --tasks ${{ steps.run-task.outputs.task_arn }}
+        attempt_count=0
+        while [ $attempt_count -lt ${{ env.max_attempt_count }} ]
+        do
+          aws ecs wait tasks-stopped \
+            --cluster ${{ inputs.cluster }} \
+            --tasks ${{ steps.run-task.outputs.task_arn }}
+        
+          task_status=$(aws ecs describe-tasks \
+            --cluster ${{ inputs.cluster }} \
+            --tasks ${{ steps.run-task.outputs.task_arn }} \
+            --query "tasks[0].lastStatus" \
+            --output text)
+
+          if [ "${task_status}" = "STOPPED" ];then
+            break
+          fi
+          echo "Waiting for the task to stop... (attempt: $attempt_count)"
+          attempt_count=$((attempt_count+1))
+        done
 
     - name: Install ecs-cli
       shell: bash
